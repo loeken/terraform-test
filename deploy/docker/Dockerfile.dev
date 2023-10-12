@@ -1,0 +1,54 @@
+# Use Alpine Linux as base image
+FROM alpine:latest
+
+# Metadata as described in Docker best practices
+LABEL maintainer="loeken@internetz.me" \
+      version="1.0" \
+      description="VSCode DevContainer for enso"
+
+# Install necessary tools and dependencies
+RUN apk add --no-cache git curl bash gpg sudo openssh zsh apk-tools-zsh-completion nodejs npm
+
+# Set the argument for user id and group id
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+RUN mkdir -p /app
+
+# Create a new group using the provided group id and create a new user 'vscode' with the provided user id in that group
+RUN addgroup -g $GROUP_ID vscode \
+    && adduser -D -u ${USER_ID} -G vscode vscode \
+    && echo "vscode ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/vscode \
+    && chmod 0440 /etc/sudoers.d/vscode \
+    && chown -R vscode:vscode /app
+
+# switch to non root user
+USER vscode
+
+# Set the working directory
+WORKDIR /app
+
+# Copy files into container
+COPY --chown=vscode:vscode . .
+
+# Set the default shell to zsh
+SHELL ["/bin/zsh", "-c"]
+
+# Install Oh My Zsh
+RUN sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+
+# Install Terraform
+ENV TERRAFORM_VERSION=1.0.9
+RUN cd /tmp && \
+    curl -LO "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip" && \
+    unzip terraform_${TERRAFORM_VERSION}_linux_amd64.zip && \
+    sudo mv terraform /usr/local/bin/ && \
+    rm terraform_${TERRAFORM_VERSION}_linux_amd64.zip
+
+# Verify Terraform installation
+RUN terraform --version
+
+# Optionally, set this if you want to run anything when the container starts
+# CMD ["command-to-run-on-startup"]
+
+# Keep container running
+CMD ["tail", "-f", "/dev/null"]

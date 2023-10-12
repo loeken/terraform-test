@@ -1,0 +1,24 @@
+version: '3'
+services:
+  myapp:
+    container_name: myapp
+    build:
+      context: .
+      dockerfile: ./deploy/docker/Dockerfile.dev
+      args:
+        - USER_ID=${USER_ID}
+        - GROUP_ID=${GROUP_ID}
+    env_file: .env
+    restart: on-failure
+    # depends_on:
+    #   - myapp-pg
+    networks:
+      - myapp-network
+    volumes:
+      # - ${HOME}/.config/gh:/home/vscode/.config/gh
+      - ${HOME}/.ssh:/home/vscode/.ssh
+
+# Networks to be created to facilitate communication between containers
+networks:
+  myapp-network:
+    driver: bridge
